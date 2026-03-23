@@ -1,0 +1,13 @@
+{
+  "name": "vinted-discord-bot",
+  "version": "1.0.0",
+  "description": "Bot Discord pour achat-revente Vinted, propulsé par Claude AI",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.39.0",
+    "discord.js": "^14.18.0"
+  }
+}
