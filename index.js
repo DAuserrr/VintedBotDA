@@ -1,5 +1,5 @@
 const { Client, GatewayIntentBits, EmbedBuilder } = require('discord.js');
-const Anthropic = require('@anthropic-ai/sdk');
+const Groq = require('groq-sdk');
 
 const client = new Client({
   intents: [
@@ -9,16 +9,16 @@ const client = new Client({
   ],
 });
 
-const claude = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
 const SYSTEM_PROMPT = `Tu es un assistant expert en achat-revente sur Vinted. Tu aides à :
 - Estimer si un article est une bonne affaire à acheter pour revendre
 - Rédiger des annonces attractives pour Vinted
-- Calculer les marges bénéficiaires (en tenant compte des frais Vinted de 5% + 0,70€ pour l'acheteur)
+- Calculer les marges bénéficiaires
 - Suggérer des prix de revente optimaux
 - Identifier les marques/articles qui se revendent bien
 
-Réponds toujours en français, de façon concise et pratique. 
+Réponds toujours en français, de façon concise et pratique.
 Quand tu calcules une marge, affiche clairement : Prix achat / Prix revente conseillé / Frais estimés / Bénéfice net.
 Utilise des emojis pour rendre tes réponses plus lisibles sur Discord.`;
 
@@ -51,15 +51,16 @@ client.on('messageCreate', async (message) => {
 async function repondreLibrement(message, userMessage) {
   await message.channel.sendTyping();
   try {
-    const response = await claude.messages.create({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 1000,
-      system: SYSTEM_PROMPT,
-      messages: [{ role: 'user', content: userMessage }],
+    const response = await groq.chat.completions.create({
+      model: 'llama3-70b-8192',
+      messages: [
+        { role: 'system', content: SYSTEM_PROMPT },
+        { role: 'user', content: userMessage }
+      ],
     });
-    await message.reply(response.content[0].text);
+    await message.reply(response.choices[0].message.content);
   } catch (err) {
-    await message.reply('❌ Erreur lors de la communication avec Claude.');
+    await message.reply('❌ Erreur. Réessaie dans un moment.');
     console.error(err);
   }
 }
@@ -69,22 +70,21 @@ async function sendHelp(message) {
     .setColor(0x09B1BA)
     .setTitle('🛍️ Bot Vinted — Commandes disponibles')
     .addFields(
-      { name: '!annonce [description brute]', value: 'Génère une annonce Vinted attractive' },
+      { name: '!annonce [description]', value: 'Génère une annonce Vinted attractive' },
       { name: '!marge [prix achat] [prix revente]', value: 'Calcule ta marge nette après frais' },
       { name: '!analyse [description article]', value: 'Évalue si c\'est une bonne affaire' },
       { name: '!prix [marque] [article] [état]', value: 'Suggère un prix de revente optimal' },
       { name: '@Bot [question libre]', value: 'Pose n\'importe quelle question sur Vinted' },
     )
-    .setFooter({ text: 'Powered by Claude AI' });
+    .setFooter({ text: 'Powered by Groq AI' });
   await message.reply({ embeds: [embed] });
 }
 
 async function generateAnnonce(message, content) {
   const description = content.replace('!annonce', '').trim();
-  if (!description) return message.reply('❌ Usage : `!annonce [ta description brute de l\'article]`');
+  if (!description) return message.reply('❌ Usage : `!annonce [description de l\'article]`');
   await message.channel.sendTyping();
-  const prompt = `Génère une annonce Vinted complète et attractive pour cet article : "${description}". Inclus : titre accrocheur, description détaillée, état, conseil de prix. Format clair avec emojis.`;
-  const response = await callClaude(prompt);
+  const response = await callGroq(`Génère une annonce Vinted complète et attractive pour : "${description}". Inclus : titre accrocheur, description détaillée, état, conseil de prix.`);
   await message.reply(response);
 }
 
@@ -107,16 +107,15 @@ async function calculerMarge(message, content) {
       { name: '💰 Bénéfice net estimé', value: `**${beneficeNet.toFixed(2)} €**`, inline: true },
       { name: '📈 Taux de marge', value: `**${marge}%**`, inline: true },
     )
-    .setFooter({ text: 'Les frais Vinted acheteur (5% + 0,70€) sont à la charge de l\'acheteur' });
+    .setFooter({ text: 'Frais Vinted acheteur (5% + 0,70€) à la charge de l\'acheteur' });
   await message.reply({ embeds: [embed] });
 }
 
 async function analyserArticle(message, content) {
   const description = content.replace('!analyse', '').trim();
-  if (!description) return message.reply('❌ Usage : `!analyse [description + prix de l\'article]`');
+  if (!description) return message.reply('❌ Usage : `!analyse [description + prix]`');
   await message.channel.sendTyping();
-  const prompt = `Analyse cet article Vinted pour un acheteur-revendeur : "${description}". Dis-moi : 1) Si c'est une bonne affaire, 2) Le potentiel de revente, 3) Le prix de revente conseillé, 4) Les risques éventuels. Sois direct et pratique.`;
-  const response = await callClaude(prompt);
+  const response = await callGroq(`Analyse cet article Vinted pour un acheteur-revendeur : "${description}". Dis-moi : 1) Si c'est une bonne affaire, 2) Le potentiel de revente, 3) Le prix de revente conseillé, 4) Les risques éventuels.`);
   await message.reply(response);
 }
 
@@ -124,23 +123,23 @@ async function suggererPrix(message, content) {
   const description = content.replace('!prix', '').trim();
   if (!description) return message.reply('❌ Usage : `!prix [marque] [article] [état]`');
   await message.channel.sendTyping();
-  const prompt = `Pour cet article Vinted : "${description}", donne-moi : 1) Le prix de revente idéal pour vendre rapidement, 2) Le prix maximum possible, 3) Les mots-clés importants pour l'annonce, 4) Astuces pour maximiser la vente`;
-  const response = await callClaude(prompt);
+  const response = await callGroq(`Pour cet article Vinted : "${description}", donne-moi : 1) Le prix idéal pour vendre rapidement, 2) Le prix maximum possible, 3) Les mots-clés pour l'annonce, 4) Astuces pour maximiser la vente.`);
   await message.reply(response);
 }
 
-async function callClaude(userPrompt) {
+async function callGroq(userPrompt) {
   try {
-    const response = await claude.messages.create({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 1000,
-      system: SYSTEM_PROMPT,
-      messages: [{ role: 'user', content: userPrompt }],
+    const response = await groq.chat.completions.create({
+      model: 'llama3-70b-8192',
+      messages: [
+        { role: 'system', content: SYSTEM_PROMPT },
+        { role: 'user', content: userPrompt }
+      ],
     });
-    return response.content[0].text;
+    return response.choices[0].message.content;
   } catch (err) {
-    console.error('Erreur Claude:', err);
-    return '❌ Erreur lors de la communication avec Claude. Réessaie dans un moment.';
+    console.error('Erreur Groq:', err);
+    return '❌ Erreur. Réessaie dans un moment.';
   }
 }
 
