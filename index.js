@@ -155,7 +155,7 @@ async function repondreLibrement(message, userMessage) {
   try {
     const response = await groq.chat.completions.create({
       model: 'llama-3.3-70b-versatile',
-,
+
       messages: [{ role: 'system', content: SYSTEM_PROMPT }, { role: 'user', content: userMessage }],
     });
     await message.reply(response.choices[0].message.content);
