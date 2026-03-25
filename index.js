@@ -21,7 +21,26 @@ const SYSTEM_PROMPT = `Tu es un assistant expert en achat-revente sur Vinted. Tu
 Réponds toujours en français, de façon concise et pratique. Utilise des emojis.`;
 
 // ─── SCRAPER ─────────────────────────────────────────────────────────────────
-const MARQUES = ['Nike', 'Adidas', 'Jordan', 'New Balance', 'Ralph Lauren', 'Lacoste', 'Stone Island', 'CP Company', 'The North Face', 'Carhartt', 'Levi\'s', 'Tommy Hilfiger', 'Burberry', 'Moncler', 'Palace'];
+const SALONS = {
+  'Nike': '1486187831213822074',
+  'Adidas': '1486187831213822074',
+  'Jordan': '1486187831213822074',
+  'New Balance': '1486187831213822074',
+  'Lacoste': '1486187881847455865',
+  'Ralph Lauren': '1486187881847455865',
+  'Tommy Hilfiger': '1486187881847455865',
+  'Levi\'s': '1486187881847455865',
+  'Carhartt': '1486187881847455865',
+  'Stone Island': '1486187939565404252',
+  'CP Company': '1486187939565404252',
+  'Moncler': '1486187939565404252',
+  'Burberry': '1486187939565404252',
+  'The North Face': '1486187939565404252',
+  'Palace': '1486187939565404252',
+};
+
+const MARQUES = Object.keys(SALONS);
+
 ;
 const articlesVus = new Set();
 let scraperInitialise = false;
@@ -55,7 +74,8 @@ function fetchVinted(marque) {
 
 async function scannerVinted() {
   if (!CHANNEL_ID) return;
-  const channel = client.channels.cache.get(CHANNEL_ID);
+  const channel = client.channels.cache.get(SALONS[marque] || CHANNEL_ID);
+;
   if (!channel) return;
 
   for (const marque of MARQUES) {
