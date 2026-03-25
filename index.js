@@ -154,7 +154,8 @@ async function repondreLibrement(message, userMessage) {
   await message.channel.sendTyping();
   try {
     const response = await groq.chat.completions.create({
-      model: 'llama3-70b-8192',
+      model: 'llama-3.3-70b-versatile',
+,
       messages: [{ role: 'system', content: SYSTEM_PROMPT }, { role: 'user', content: userMessage }],
     });
     await message.reply(response.choices[0].message.content);
@@ -226,7 +227,8 @@ async function suggererPrix(message, content) {
 async function callGroq(userPrompt) {
   try {
     const response = await groq.chat.completions.create({
-      model: 'llama3-70b-8192',
+      model: 'llama-3.3-70b-versatile',
+,
       messages: [{ role: 'system', content: SYSTEM_PROMPT }, { role: 'user', content: userPrompt }],
     });
     return response.choices[0].message.content;
