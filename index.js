@@ -21,7 +21,8 @@ const SYSTEM_PROMPT = `Tu es un assistant expert en achat-revente sur Vinted. Tu
 Réponds toujours en français, de façon concise et pratique. Utilise des emojis.`;
 
 // ─── SCRAPER ─────────────────────────────────────────────────────────────────
-const MARQUES = ['Nike', 'Adidas', 'Ralph Lauren', 'Lacoste'];
+const MARQUES = ['Nike', 'Adidas', 'Jordan', 'New Balance', 'Ralph Lauren', 'Lacoste', 'Stone Island', 'CP Company', 'The North Face', 'Carhartt', 'Levi\'s', 'Tommy Hilfiger', 'Burberry', 'Moncler', 'Palace'];
+;
 const articlesVus = new Set();
 let scraperInitialise = false;
 
